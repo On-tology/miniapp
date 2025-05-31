@@ -1,1 +1,1 @@
-export { auth as middleware } from '@/auth/auth.edge'
+export { default } from "next-auth/middleware";
