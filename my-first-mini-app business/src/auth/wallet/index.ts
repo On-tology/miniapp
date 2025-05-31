@@ -33,7 +33,7 @@ export const walletAuth = async () => {
     );
     return;
   } else {
-    console.log(result.finalPayload);
+    console.log("BLABLA",  result.finalPayload);
   }
 
   await signIn('credentials', {

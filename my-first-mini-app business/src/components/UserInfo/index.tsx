@@ -11,7 +11,7 @@ import { useSession } from 'next-auth/react';
  */
 export const UserInfo = () => {
   // Fetching the user state client side
-  // const session = useSession();
+  const session = useSession();
 
   return (
     <h1>hi</h1>
