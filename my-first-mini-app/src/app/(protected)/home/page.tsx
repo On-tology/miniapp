@@ -1,3 +1,5 @@
+// 'use client'
+
 import { auth } from '@/auth';
 import { Page } from '@/components/PageLayout';
 import { Pay } from '@/components/Pay';
@@ -6,13 +8,18 @@ import { UserInfo } from '@/components/UserInfo';
 import { Verify } from '@/components/Verify';
 import { ViewPermissions } from '@/components/ViewPermissions';
 import  DebugTabs from '@/components/Tabs';
-
+import { MiniKit } from '@worldcoin/minikit-js'
+import SimpleABI from '@/abis/maincontract.json'
 // import { Marble, Tabs, TopBar } from '@worldcoin/mini-apps-ui-kit-react';
 import { CheckCircle } from 'iconoir-react';
 import {Tasks} from '@/components/Tasks';
 
 export default async function Home() {
   const session = await auth();
+
+
+
+
 
   return (
     <>
@@ -40,6 +47,10 @@ export default async function Home() {
         {/* <h1>hello</h1> */}
         <DebugTabs />
         <Tasks />
+        {/* <button></button> */}
+        {/* <button onClick={sendTransaction}>Send Transaction</button> */}
+
+
         {/* <UserInfo /> */}
         {/* <Verify />
         <Pay />

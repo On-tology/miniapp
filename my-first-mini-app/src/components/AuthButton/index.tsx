@@ -3,7 +3,6 @@ import { walletAuth } from '@/auth/wallet';
 import { Button, LiveFeedback } from '@worldcoin/mini-apps-ui-kit-react';
 import { useMiniKit } from '@worldcoin/minikit-js/minikit-provider';
 import { useCallback, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 
 /**
  * This component is an example of how to authenticate a user
@@ -13,23 +12,19 @@ import { useRouter } from 'next/navigation';
 export const AuthButton = () => {
   const [isPending, setIsPending] = useState(false);
   const { isInstalled } = useMiniKit();
-  const router = useRouter();
 
   const onClick = useCallback(async () => {
     if (!isInstalled || isPending) {
       return;
     }
-    console.log('>>> onClick');
-    router.push('/home');
     setIsPending(true);
-
-    // try {
-    //   await walletAuth();
-    // } catch (error) {
-    //   console.error('Wallet authentication button error', error);
-    //   setIsPending(false);
-    //   return;
-    // }
+    try {
+      await walletAuth();
+    } catch (error) {
+      console.error('Wallet authentication button error', error);
+      setIsPending(false);
+      return;
+    }
 
     setIsPending(false);
   }, [isInstalled, isPending]);
@@ -61,7 +56,7 @@ export const AuthButton = () => {
       state={isPending ? 'pending' : undefined}
     >
       <Button
-        onClick={() => { router.push('/home'); }}
+        onClick={onClick}
         disabled={isPending}
         size="lg"
         variant="primary"
