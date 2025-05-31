@@ -4,6 +4,7 @@ import { useState, ChangeEvent } from "react";
 import { MiniKit } from "@worldcoin/minikit-js";
 import SimpleABI from "@/abis/maincontract.json";
 import Button from "@/components/ui/button"; // (adjust path if needed)
+import { ethers } from "ethers";
 
 export default function CreateTask() {
   const [showForm, setShowForm] = useState(false);
@@ -36,15 +37,17 @@ export default function CreateTask() {
       taskType === "classification" ? [optionA, optionB] : [];
 
     try {
-      const { commandPayload, finalPayload } =
+        const { commandPayload, finalPayload } =
         await MiniKit.commandsAsync.sendTransaction({
           transaction: [
             {
-              // Use your deployed contract address here:
               address: "0x13A037C20a3762ce151032Eb86D2DEd78c8c5E99",
               abi: SimpleABI,
-              functionName: "createTask",
-              args: [taskType, imageURI, optionsArray],
+              functionName: "postRankingTask",
+              args: [
+                "how would u rate this hackathon?",
+                ethers.parseEther("0.0001"), // uint256 in wei
+              ],
             },
           ],
         });
