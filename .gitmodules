@@ -1,0 +1,6 @@
+[submodule "my-first-mini-app/Contracts/lib/forge-std"]
+	path = my-first-mini-app/Contracts/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
+[submodule "Contracts/lib/forge-std"]
+	path = Contracts/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
