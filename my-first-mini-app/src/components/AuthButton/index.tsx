@@ -18,8 +18,11 @@ export const AuthButton = () => {
       return;
     }
     setIsPending(true);
+    
     try {
+      
       await walletAuth();
+
     } catch (error) {
       console.error('Wallet authentication button error', error);
       setIsPending(false);

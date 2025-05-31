@@ -1,4 +1,5 @@
 'use client';
+import { MiniKit } from '@worldcoin/minikit-js';
 import { MiniKitProvider } from '@worldcoin/minikit-js/minikit-provider';
 import { Session } from 'next-auth';
 import { SessionProvider } from 'next-auth/react';
@@ -34,7 +35,7 @@ export default function ClientProviders({
 }: ClientProvidersProps) {
   return (
     <ErudaProvider>
-      <MiniKitProvider>
+      <MiniKitProvider props={{appId: "app_084f1b3748e598a42b970961a3b9fbd1"}}>
         <SessionProvider session={session}>{children}</SessionProvider>
       </MiniKitProvider>
     </ErudaProvider>

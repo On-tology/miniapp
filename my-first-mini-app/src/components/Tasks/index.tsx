@@ -58,7 +58,6 @@ export function Tasks() {
     },
   ]
 
-  // Toggle expansion: if you click on the already active card, collapse it; otherwise, expand the clicked one.
   const handleToggle = (id: number) => {
     setActiveTaskId((prev) => (prev === id ? null : id))
   }
@@ -76,6 +75,7 @@ export function Tasks() {
         },
       ],
     })
+    console.log('finalPayload',finalPayload, commandPayload)
     setA(finalPayload)
   }
 
@@ -157,8 +157,8 @@ export function Tasks() {
                 <div className="mt-4">
                   <button onClick={sendTransaction} className="w-full bg-[#6c3ce9] hover:bg-[#5b32c7] dark:bg-[#8b5cf6] dark:hover:bg-[#7c3aed] text-lg py-6 text-white rounded-lg h-12 flex items-center justify-center">
                     {task.buttonLabel}
-                    {a && <div>{JSON.stringify(a)}</div>}
                   </button>
+                    {a && <div>{JSON.stringify(a)}</div>}
                 </div>
               </div>
             </Card>
