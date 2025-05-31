@@ -3,6 +3,8 @@
 import { TabItem, Tabs } from '@worldcoin/mini-apps-ui-kit-react';
 import { Bank, Home, User } from 'iconoir-react';
 import { useState } from 'react';
+import { CheckCircle, FileEdit, ClipboardList, CheckCheck, BarChart3 } from "lucide-react"
+
 
 /**
  * This component uses the UI Kit to navigate between pages
@@ -16,10 +18,13 @@ export const Navigation = () => {
 
   return (
     <Tabs value={value} onValueChange={setValue}>
-      <TabItem value="home" icon={<Home />} label="Home" />
-      {/* // TODO: These currently don't link anywhere */}
-      <TabItem value="wallet" icon={<Bank />} label="Wallet" />
-      <TabItem value="profile" icon={<User />} label="Profile" />
+      <TabItem value="tasks" icon={    <CheckCheck className="h-6 w-6" />         } label="Tasks" />
+      <TabItem value="earnings" icon={           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M3 5H21V7H3V5ZM3 11H21V13H3V11ZM3 17H21V19H3V17Z" fill="currentColor" />
+      </svg> } label="Earnings" />
+      <TabItem value="stats" icon={<BarChart3 className="h-6 w-6" />} label="Stats" />
+        <TabItem value="profile" icon={        <User className="h-6 w-6" />
+        } label="Profile" />
     </Tabs>
   );
 };
