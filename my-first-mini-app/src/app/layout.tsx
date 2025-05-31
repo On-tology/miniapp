@@ -29,7 +29,8 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} `}>
-        <ClientProviders session={session}>{children}</ClientProviders>
+        {children}
+        {/* <ClientProviders session={session}>{children}</ClientProviders> */}
       </body>
     </html>
   );
