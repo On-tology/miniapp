@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  Tabs as TabsRoot,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-} from "@/components/ui/tabs";
+import { Tabs as TabsRoot, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function TabsSelector() {
   return (
@@ -64,8 +59,6 @@ export default function TabsSelector() {
             Surveys
           </TabsTrigger>
         </TabsList>
-
-       
       </TabsRoot>
     </div>
   );
