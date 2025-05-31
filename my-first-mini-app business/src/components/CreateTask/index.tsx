@@ -17,6 +17,7 @@ export default function CreateTask() {
   const [optionB, setOptionB] = useState("");
   const [txResult, setTxResult] =
     useState<Record<string, any> | null>(null);
+  const [reward, setReward] = useState("");
 
   // Whenever the user picks an image, we store a local URL (or you could
   // upload it to IPFS here and store that URL instead).
