@@ -2,13 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { MiniKit } from "@worldcoin/minikit-js";
-import { BigNumberish, ethers } from "ethers";
+import { ethers } from "ethers";
 
 import PoolABI from "@/abis/maincontract.json";
 import Button from "@/components/ui/button";
 import Input from "@/components/ui/input";
 import { useSession } from "next-auth/react";
-import { ZeroAddress } from "ethers";
 
 type UserInfo = {
   walletAddress?: string;
@@ -17,126 +16,55 @@ type UserInfo = {
 };
 
 export default function CryptoWalletApp() {
-  const session = useSession();
 
+  const session = useSession();
+  
   const [amount, setAmount] = useState<string>("");
   const [mode, setMode] = useState<"deposit" | "withdraw">("deposit");
   const [txResult, setTxResult] = useState<Record<string, any> | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
 
-  // Replace hardcoded values with stateful ones:
-  const [walletBalance, setWalletBalance] = useState<BigNumberish | null>(null);
-  const [walletUsdValue, setWalletUsdValue] = useState<number | null>(null);
+  // These could also be fetched on‐chain or via a hook, but we're hardcoding for now:
+  const walletBalance = 3.45; 
+  // const poolBalance = 12.8;
+  const usdValue = 10214;
+  const poolUsdValue = 38642;
 
-  const [poolBalance, setPoolBalance] = useState<BigNumberish>(ZeroAddress);
+  const ethfetchpriceurl = 'https://hermes.pyth.network/api/latest_price_feeds?ids[]=0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace'
+
+  const [ethfetchprice, setEthfetchprice] = useState(0);
   const [ethUsdValue, setEthUsdValue] = useState<number | null>(null);
 
-  // Pyth price feed URL (for ETH/USD)
-  const ethFetchPriceUrl =
-    "https://hermes.pyth.network/api/latest_price_feeds?ids[]=0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace";
+  
 
   const CONTRACT_ADDRESS = "0x13A037C20a3762ce151032Eb86D2DEd78c8c5E99";
+// 2) Create a read‐only provider (v6 syntax)
+const provider = new ethers.JsonRpcProvider('https://worldchain-mainnet.g.alchemy.com/v2/14v_QWa7zUtZ_lXn4e0W7');
 
-  // 1) Create a read‐only provider
-  const provider = new ethers.JsonRpcProvider(
-    "https://worldchain-mainnet.g.alchemy.com/v2/14v_QWa7zUtZ_lXn4e0W7"
-  );
+// 3) Instantiate contract with (address, ABI, provider)
+const contract = new ethers.Contract(CONTRACT_ADDRESS, PoolABI, provider); 
+ const [poolBalance, setPoolBalance] = useState(0);
 
-  // 2) Instantiate contract with (address, ABI, provider)
-  const contract = new ethers.Contract(CONTRACT_ADDRESS, PoolABI, provider);
 
-  // ────────────────────────────────────────────────────────────────────────────────
-  // FETCH POOL BALANCE (unchanged)
-  useEffect(() => {
-    if (!session?.data?.user?.id) return;
-
-    const getPoolBalance = async () => {
-      try {
-        // @ts-ignore
-        const bal: ethers.BigNumber = await contract.poolBalance(
-          session.data.user.id
-        );
-        setPoolBalance(bal);
-      } catch (err) {
-        console.error("Error fetching pool balance:", err);
-      }
-    };
-
-    getPoolBalance();
-  }, [contract, session?.data?.user?.id]);
-
-  // ────────────────────────────────────────────────────────────────────────────────
-  // FETCH WALLET BALANCE (new)
-  useEffect(() => {
-    if (!userInfo?.walletAddress) return;
-
-    const getWalletBalance = async () => {
-      try {
-        const bal: BigNumberish = await provider.getBalance(
-          userInfo.walletAddress!
-        );
-        setWalletBalance(bal);
-      } catch (err) {
-        console.error("Error fetching wallet balance:", err);
-      }
-    };
-
-    getWalletBalance();
-  }, [provider, userInfo?.walletAddress]);
-
-  // ────────────────────────────────────────────────────────────────────────────────
-  // FETCH ETH PRICE → compute poolUsdValue & walletUsdValue
-  useEffect(() => {
-    // Only run once if either poolBalance or walletBalance changes
-    if (poolBalance == null && walletBalance == null) return;
-
-    fetch(ethFetchPriceUrl)
-      .then((response) => response.json())
-      .then((data) => {
-        const rawPrice: number = data[0].price.price; // price × 10^8
-        const ethPrice: number = rawPrice / 1e8; // actual USD/ETH
-
-        setEthUsdValue(ethPrice);
-
-        // Compute USD for pool:
-        if (poolBalance) {
-          const poolEth = parseFloat(ethers.formatEther(poolBalance));
-          const poolUsd = poolEth * ethPrice;
-          // (You already have a separate state for pool‐USD, but here it's only used in display)
-        }
-
-        // Compute USD for wallet:
-        if (walletBalance) {
-          const walletEth = parseFloat(ethers.formatEther(walletBalance));
-          const walletUsd = walletEth * ethPrice;
-          setWalletUsdValue(walletUsd);
-        }
-      })
-      .catch((error) => console.error("Error fetching ETH price:", error));
-  }, [poolBalance, walletBalance]);
-
-  // ────────────────────────────────────────────────────────────────────────────────
-  // FETCH USER INFO VIA MINIKIT
-  useEffect(() => {
-    MiniKit.getUserInfo()
-      .then((info) => setUserInfo(info))
-      .catch(console.error);
-  }, []);
-
-  // ────────────────────────────────────────────────────────────────────────────────
-  // SUBMIT HANDLER (unchanged)
   const handleSubmit = async () => {
+    // Prevent double‐submits
     if (isSubmitting) return;
+
+    // Validate amount
     if (!amount || Number(amount) <= 0) {
       alert("Please enter a positive ETH amount.");
       return;
     }
 
+    // Convert ETH string → Wei (string)
     let amountInWei: string;
     try {
+      // amountInWei = ethers.parseEther(amount).toString();
+
       const amountBn = ethers.parseEther(amount);
-      amountInWei = "0x" + amountBn.toString(16);
+// const amountHex = amountBn.toHexString(); // e.g. "0x2386F26FC10000"
+amountInWei = "0x" + amountBn.toString(16);
     } catch (err) {
       console.error("Invalid amount:", err);
       alert("Invalid amount format.");
@@ -148,6 +76,7 @@ export default function CryptoWalletApp() {
 
     try {
       if (mode === "deposit") {
+        // depositFunds is payable and takes no args; `value` must be the wei amount
         const { finalPayload } = await MiniKit.commandsAsync.sendTransaction({
           transaction: [
             {
@@ -161,6 +90,7 @@ export default function CryptoWalletApp() {
         });
         setTxResult(finalPayload);
       } else {
+        // withdrawFunds(uint256) takes a single uint256 arg → amount in wei
         const { finalPayload } = await MiniKit.commandsAsync.sendTransaction({
           transaction: [
             {
@@ -181,7 +111,57 @@ export default function CryptoWalletApp() {
     }
   };
 
-  // ────────────────────────────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    if (!session?.data?.user?.id) return;
+
+    const getPoolBalance = async () => {
+      try {
+        // @ts-ignore
+        const balance = await contract.poolBalance(session.data.user.id);
+        setPoolBalance(Number(balance));
+      } catch (err) {
+        console.error("Error fetching pool balance:", err);
+      }
+    };
+
+    getPoolBalance();
+  }, [contract, session?.data?.user?.id]);
+
+  // 2) Once poolBalance is populated, fetch ETH price and calculate USD value
+  useEffect(() => {
+    if (poolBalance === null) return;
+
+    fetch(ethfetchpriceurl)
+      .then((response) => response.json())
+      .then((data) => {
+     
+
+      const rawPrice: number = data[0].price.price;       
+      const ethPrice: number = rawPrice / 1e8;         
+
+      console.log("rawPrice (×10⁸):", rawPrice);
+      console.log("ethPrice (USD/ETH):", ethPrice);
+
+      const poolBalanceEthString = ethers.formatEther(poolBalance);
+      const poolBalanceEthNumber = Number(poolBalanceEthString);    
+
+      console.log("poolBalanceEthNumber (ETH):", poolBalanceEthNumber);
+
+      const usdValue: number = poolBalanceEthNumber * ethPrice;
+
+      setEthUsdValue(usdValue);
+      })
+      .catch((error) => console.error("Error fetching ETH price:", error));
+  }, [poolBalance]);
+
+  useEffect(() => {
+    MiniKit.getUserInfo().then(setUserInfo).catch(console.error);
+  }, []);
+
+
+  // MiniKit.install("app_084f1b3748e598a42b970961a3b9fbd1")
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Mobile Frame */}
@@ -193,48 +173,22 @@ export default function CryptoWalletApp() {
             <h1 className="text-2xl font-bold">Deposit & Withdraw</h1>
           </div>
 
+
           {/* Balance Cards */}
           <div className="grid grid-cols-2 gap-3 mb-6">
-            {/* ───────── WALLET BALANCE CARD ───────── */}
             <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-xl">
-              <div className="text-sm text-purple-600 font-medium mb-1">
-                Wallet Balance
-              </div>
-              <div className="text-lg font-bold text-purple-900">
-                {/* If walletBalance is still null, show "Loading..." */}
-                {walletBalance !== null
-                  ? `${parseFloat(ethers.formatEther(walletBalance)).toFixed(4)} ETH`
-                  : "Loading..."}
-              </div>
-              <div className="text-xs text-purple-600">
-                {walletUsdValue !== null
-                  ? `$${walletUsdValue.toLocaleString(undefined, {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}`
-                  : "Loading..."}
-              </div>
+              <div className="text-sm text-purple-600 font-medium mb-1">Wallet Balance</div>
+              <div className="text-lg font-bold text-purple-900">{walletBalance} ETH</div>
+              <div className="text-xs text-purple-600">${usdValue.toLocaleString()}</div>
             </div>
-
-            {/* ───────── POOL BALANCE CARD ───────── */}
             <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-xl">
-              <div className="text-sm text-green-600 font-medium mb-1">
-                Pool Balance
-              </div>
-              <div className="text-lg font-bold text-green-900">
-                {poolBalance
-                  ? `${parseFloat(ethers.formatEther(poolBalance)).toFixed(4)} ETH`
-                  : "0 ETH"}
-              </div>
+              <div className="text-sm text-green-600 font-medium mb-1"> Pool Balance</div>
+              <div className="text-lg font-bold text-green-900">{ ethers.formatEther(poolBalance)  } ETH</div>
               <div className="text-xs text-green-600">
-                {ethUsdValue !== null
-                  ? new Intl.NumberFormat("en-US", {
-                      style: "currency",
-                      currency: "USD",
-                    }).format(
-                      parseFloat(ethers.formatEther(poolBalance)) * ethUsdValue
-                    )
-                  : "Loading..."}
+                {ethUsdValue !== null ? new Intl.NumberFormat("en-US", {
+                  style: "currency",
+                  currency: "USD",
+                }).format(ethUsdValue) : "Loading..."}
               </div>
             </div>
           </div>
@@ -317,13 +271,7 @@ export default function CryptoWalletApp() {
                     onChange={(e) => setAmount(e.target.value)}
                     placeholder="0.00"
                     className="border-0 text-lg font-medium p-0 focus-visible:ring-0"
-                    max={
-                      mode === "deposit" && walletBalance
-                        ? parseFloat(ethers.formatEther(walletBalance))
-                        : mode === "withdraw" && poolBalance
-                        ? parseFloat(ethers.formatEther(poolBalance))
-                        : undefined
-                    }
+                    max={mode === "deposit" ? walletBalance : poolBalance}
                   />
                 </div>
                 <span className="text-gray-600 font-medium">ETH</span>
@@ -342,10 +290,7 @@ export default function CryptoWalletApp() {
               disabled={
                 !amount ||
                 Number.parseFloat(amount) <= 0 ||
-                isSubmitting ||
-                (mode === "deposit"
-                  ? !(walletBalance && Number(amount) <= parseFloat(ethers.formatEther(walletBalance)))
-                  : !(poolBalance && Number(amount) <= parseFloat(ethers.formatEther(poolBalance))))
+                isSubmitting
               }
             >
               {isSubmitting
@@ -376,11 +321,7 @@ export default function CryptoWalletApp() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <div className="text-sm text-gray-600">Total Pool Size</div>
-                <div className="font-bold text-gray-800">
-                  {poolBalance
-                    ? `${parseFloat(ethers.formatEther(poolBalance)).toFixed(4)} ETH`
-                    : "0 ETH"}
-                </div>
+                <div className="font-bold text-gray-800">{ ethers.formatEther(poolBalance) } ETH</div>
               </div>
               <div>
                 <div className="text-sm text-gray-600">Money Spent</div>

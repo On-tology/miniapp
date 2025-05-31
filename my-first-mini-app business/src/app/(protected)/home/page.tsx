@@ -46,18 +46,7 @@ export default async function Home() {
       </Page.Header>
       <Page.Main className="flex flex-col items-center justify-start gap-4 mb-16">
         <CreateTask />
-        {/* <h1>hello</h1> */}
-        {/* <DebugTabs />
-        <Tasks /> */}
-        {/* <button></button> */}
-        {/* <button onClick={sendTransaction}>Send Transaction</button> */}
 
-
-        {/* <UserInfo /> */}
-        {/* <Verify />
-        <Pay />
-        <Transaction />
-        <ViewPermissions /> */}
         
       </Page.Main>
     </>

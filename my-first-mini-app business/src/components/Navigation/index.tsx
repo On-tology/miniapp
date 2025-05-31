@@ -3,7 +3,7 @@
 import { TabItem, Tabs } from '@worldcoin/mini-apps-ui-kit-react';
 import { Bank, Home, User } from 'iconoir-react';
 import { useState } from 'react';
-import { CheckCircle, FileEdit, ClipboardList, CheckCheck, BarChart3 } from "lucide-react"
+import { CheckCircle, FileEdit, ClipboardList, CheckCheck, BarChart3, ListCheck } from "lucide-react"
 import { useRouter } from 'next/navigation';
 
 
@@ -21,6 +21,8 @@ export const Navigation = () => {
     <Tabs value={value} onValueChange={setValue} >
       <TabItem onClick={() => router.push('/home')} value="tasks" icon={    <CheckCheck className="h-6 w-6" />         } label="Tasks" />
       <TabItem onClick={() => router.push('/budget')} value="budget" icon={<BarChart3 className="h-6 w-6" />} label="Budget" />
+      <TabItem onClick={() => router.push('/manage')} value="manage" icon={<ListCheck className="h-6 w-6" />} label="Manage" />
+
     </Tabs>
   );
 };
