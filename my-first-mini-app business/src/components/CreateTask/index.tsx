@@ -8,24 +8,28 @@ import { ethers } from "ethers";
 
 export default function CreateTask() {
   const [showForm, setShowForm] = useState(false);
-  const [taskType, setTaskType] = useState<"ranking" | "classification" | "">("");
+  const [taskType, setTaskType] = useState<"ranking" | "classification" | "">(
+    ""
+  );
   const [imageURI, setImageURI] = useState<string>("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [optionA, setOptionA] = useState("");
   const [optionB, setOptionB] = useState("");
-  const [txResult, setTxResult] =
-    useState<Record<string, any> | null>(null);
+  const [txResult, setTxResult] = useState<Record<string, any> | null>(null);
 
   // Whenever the user picks an image, we store a local URL (or you could
   // upload it to IPFS here and store that URL instead).
   const handleImageUpload = (e: ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     const file = e.target.files[0];
+
+    setImageFile(file);
     const url = URL.createObjectURL(file);
     setImageURI(url);
   };
 
   const handleSubmit = async () => {
-    if (!taskType || !imageURI) {
+    if (!taskType || !imageFile) {
       alert("Please select task type and upload an image.");
       return;
     }
@@ -36,25 +40,49 @@ export default function CreateTask() {
     const optionsArray =
       taskType === "classification" ? [optionA, optionB] : [];
 
+    /* ---------- UPLOAD IMAGE TO NEST BACKEND ---------- */
     try {
-        const { commandPayload, finalPayload } =
-        await MiniKit.commandsAsync.sendTransaction({
-          transaction: [
-            {
-              address: "0x13A037C20a3762ce151032Eb86D2DEd78c8c5E99",
-              abi: SimpleABI,
-              functionName: "postRankingTask",
-              args: [
-                "how would u rate this hackathon?",
-                ethers.parseEther("0.0001"), // uint256 in wei
-              ],
-            },
-          ],
-        });
+      const form = new FormData();
+      form.append("file", imageFile); // field name MUST be “file”
+
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/files`, // e.g. https://backend-production-bb1f.up.railway.app
+        { method: "POST", body: form }
+      );
+
+      if (!res.ok) {
+        throw new Error(`Upload failed: ${res.status} ${res.statusText}`);
+      }
+
+      const { key } = await res.json(); // { key: "uuid-image.png" }
+      console.log("Uploaded to S3, key:", key);
+    } catch (err) {
+      console.error(err);
+      alert("Image upload failed (see console).");
+      return; // stop if the upload failed
+    }
+
+    try {
+      const {
+        commandPayload,
+        finalPayload,
+      } = await MiniKit.commandsAsync.sendTransaction({
+        transaction: [
+          {
+            address: "0x13A037C20a3762ce151032Eb86D2DEd78c8c5E99",
+            abi: SimpleABI,
+            functionName: "postRankingTask",
+            args: [
+              "how would u rate this hackathon?",
+              ethers.parseEther("0.0001"), // uint256 in wei
+            ],
+          },
+        ],
+      });
 
       setTxResult(finalPayload);
       console.log("Blockchain response:", finalPayload);
-    } catch (err: any) {
+    } catch (err) {
       console.error("Error sending transaction:", err);
       alert("Failed to send transaction. See console for details.");
     }
