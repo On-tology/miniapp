@@ -1,0 +1,28 @@
+{
+  "../node_modules/viem/_esm/actions/public/call.js -> ../../utils/ccip.js": {
+    "id": "../node_modules/viem/_esm/actions/public/call.js -> ../../utils/ccip.js",
+    "files": [
+      "static/chunks/_app-pages-browser_node_modules_viem__esm_utils_ccip_js.js"
+    ]
+  },
+  "../node_modules/viem/_esm/utils/rpc/webSocket.js -> isows": {
+    "id": "../node_modules/viem/_esm/utils/rpc/webSocket.js -> isows",
+    "files": []
+  },
+  "../node_modules/viem/_esm/utils/signature/recoverPublicKey.js -> @noble/curves/secp256k1": {
+    "id": "../node_modules/viem/_esm/utils/signature/recoverPublicKey.js -> @noble/curves/secp256k1",
+    "files": []
+  },
+  "providers/Eruda/index.tsx -> ./eruda-provider": {
+    "id": "providers/Eruda/index.tsx -> ./eruda-provider",
+    "files": [
+      "static/chunks/_app-pages-browser_src_providers_Eruda_eruda-provider_tsx.js"
+    ]
+  },
+  "providers/index.tsx -> @/providers/Eruda": {
+    "id": "providers/index.tsx -> @/providers/Eruda",
+    "files": [
+      "static/chunks/_app-pages-browser_src_providers_Eruda_index_tsx.js"
+    ]
+  }
+}

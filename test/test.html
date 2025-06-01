@@ -1,0 +1,33 @@
+<input id="fileInput" type="file" />
+<button id="uploadBtn">Upload</button>
+
+<script>
+  document.getElementById('uploadBtn').addEventListener('click', async () => {
+  const input = document.getElementById('fileInput');
+  if (!input.files.length) return alert('Select a file first.');
+
+  const form = new FormData();
+  form.append('file', input.files[0]);
+
+  try {
+    const res = await fetch('https://backend-production-bb1f.up.railway.app/files', {
+      method: 'POST',
+      body: form,
+    });
+
+    const contentType = res.headers.get('content-type') || '';
+
+    let data;
+    if (contentType.includes('application/json')) {
+      data = await res.json();
+    } else {
+      data = await res.text();
+    }
+
+    console.log('✅ Upload success:', data);
+  } catch (err) {
+    console.error('❌ Upload failed:', err);
+  }
+});
+
+</script>

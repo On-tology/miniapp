@@ -30,11 +30,14 @@ export default function CreateTask() {
   };
 
   const handleSubmit = async () => {
-    if (!taskType || !imageFile) {
-      alert("Please select task type and upload an image.");
-      return;
-    }
+    // if (!taskType || !imageFile) {
+    //   alert("Please select task type and upload an image.");
+    //   return;
+    // }
 
+    console.log('came here : ')
+
+    console.log('image file : ', imageFile)
     // Build the arguments for the contract call.
     // If it's "classification", we pass the two options in an array.
     // If it's "ranking", we pass an empty array for options.
@@ -42,20 +45,26 @@ export default function CreateTask() {
       taskType === "classification" ? [optionA, optionB] : [];
 
     /* ---------- UPLOAD IMAGE TO NEST BACKEND ---------- */
+
+    let keystore
     try {
       const form = new FormData();
       form.append("file", imageFile); // field name MUST be “file”
 
+      console.log('sent...')
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/files`, // e.g. https://backend-production-bb1f.up.railway.app
         { method: "POST", body: form }
       );
+
+      console.log('received')
 
       if (!res.ok) {
         throw new Error(`Upload failed: ${res.status} ${res.statusText}`);
       }
 
       const { key } = await res.json(); // { key: "uuid-image.png" }
+      keystore = key
       console.log("Uploaded to S3, key:", key);
     } catch (err) {
       console.error(err);
@@ -74,8 +83,8 @@ export default function CreateTask() {
             abi: SimpleABI,
             functionName: "postRankingTask",
             args: [
-              "how would u rate this hackathon?",
-              ethers.parseEther("0.0001"), // uint256 in wei
+              keystore,
+              ethers.parseEther(reward), // uint256 in wei
             ],
           },
         ],
