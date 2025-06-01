@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Card from "@/components/ui/card";
 import Progress from "@/components/ui/progress";
-import { FileEdit, ClipboardList } from "lucide-react";
+import { FileEdit, ClipboardList, StarHalfIcon, Star, ListOrdered } from "lucide-react";
+import { ethers } from "ethers";
 //import Button from "../ui/button"
 import {
   MiniAppSendTransactionErrorPayload,
@@ -16,51 +17,91 @@ export function Tasks() {
   // Track which task is currently expanded (by id). Initialize to 1 so the first card is expanded by default.
   const [activeTaskId, setActiveTaskId] = useState<number | null>(1);
 
-  // Define your tasks’ data, including any content you want to show when expanded.
-  const tasks = [
-    {
-      id: 1,
-      title: "Evaluate Chatbot Responses",
-      reward: "0,20 WLD",
-      time: "3 min",
-      // Icon as JSX
-      icon: (
-        <div className="w-8 h-8 text-white">
-          <svg
-            viewBox="0 0 24 24"
-            fill="currentColor"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z" />
-          </svg>
-        </div>
-      ),
-      progressValue: 30,
-      instructions: `Rate each pair of chatbot responses based on helpfulness. Select the more appropriate answer for the given query.`,
-      // If you want a button label or any other JSX for expanded content, you can include it here
-      buttonLabel: "Accept",
-    },
-    {
-      id: 2,
-      title: "Correct Bounding Boxes",
-      reward: "0,15 WLD",
-      time: "2 min",
-      icon: <FileEdit className="w-5 h-5 text-white" />,
-      progressValue: 0, // or whatever you prefer
-      instructions: `Adjust bounding boxes to match the target objects in the image. Ensure each box tightly encloses the object of interest.`,
-      buttonLabel: "Submit",
-    },
-    {
-      id: 3,
-      title: "Take a Short Survey",
-      reward: "0,10 WLD",
-      time: "4 min",
-      icon: <ClipboardList className="w-5 h-5 text-white" />,
-      progressValue: 0, // or whatever you prefer
-      instructions: `Answer a few quick questions about your experience. Your feedback helps us improve!`,
-      buttonLabel: "Start Survey",
-    },
-  ];
+ const [tasks, setTasks] = useState<any[]>([]);
+
+  const CONTRACT_ADDRESS = "0x13A037C20a3762ce151032Eb86D2DEd78c8c5E99";
+  const provider = new ethers.JsonRpcProvider(
+    "https://worldchain-mainnet.g.alchemy.com/v2/14v_QWa7zUtZ_lXn4e0W7"
+  );
+  const contract = new ethers.Contract(CONTRACT_ADDRESS, SimpleABI, provider);
+
+
+   // 2) Fetch on‐chain tasks once on mount
+   useEffect(() => {
+    const fetchOnChainTasks = async () => {
+      try {
+        // Assume getAllTasks() returns something like:
+        // [ [ BigNumber id,
+        //     address requester,
+        //     BigNumber reward,
+        //     string description,
+        //     BigNumber taskType,
+        //     BigNumber status,
+        //     address worker,
+        //     boolean hasSubmission,
+        //     BigNumber submissionIndex,
+        //     BigNumber ratingScaled ],
+        //   … more tuples … ]
+        const rawTasks: any[] = await contract.getAllTasks();
+        console.log('rawTasks', rawTasks);
+        // Map each tuple → OnChainTask
+        const parsed = rawTasks.map((tup: any) => {
+          // 0: id (BigNumberish)
+          const id = Number(tup[0]);
+
+          // 3: description as our "title"
+          const description: string = tup[3];
+
+          // 2: reward (BigNumberish). We assume it's in wei; use formatEther to get "X.WLD"
+          const rewardWei = Number(tup[2]);
+          const rewardHuman = `${ethers.formatEther(rewardWei)} ETH`;
+
+          // 5: status → we derive a "progressValue" as an example
+          //    (this is arbitrary—feel free to define your own logic)
+          const statusNum = Number(tup[5]);
+          // e.g. 0 = not started (0%), 1 = in progress (50%), 2 = done (100%)
+          let progressValue = 0;
+          if (statusNum === 1) progressValue = 50;
+          else if (statusNum === 2) progressValue = 100;
+
+          // 7: hasSubmission → if true, we can say "instructions" = "View submission on‐chain"
+          const hasSubmission: boolean = tup[7];
+          const instructions = hasSubmission
+            ? "Submission available. Click to view."
+            : "No submission yet. Waiting on worker.";
+
+          // 4: taskType (BigNumberish)—we can ignore or use it to pick an icon/color
+          const taskTypeNum = Number(tup[4]);
+
+          // For the "time" field, on‐chain doesn't store explicit time, so we just put a placeholder
+          const timePlaceholder = taskTypeNum === 0 ? "3 min" : "2 min";
+
+          // Button label could change based on status
+          let buttonLabel = "Accept";
+          
+
+          return {
+            id,
+            title: `Task #${id}`,
+            type : taskTypeNum === 0 ? "Ranking" : "Classification",
+            reward: rewardHuman,
+            time: timePlaceholder,
+            progressValue,
+            instructions,
+            buttonLabel,
+            icon: taskTypeNum === 0 ? <FileEdit className="w-5 h-5 text-white" /> : <ClipboardList className="w-5 h-5 text-white" />,
+          };
+        });
+
+        setTasks(parsed);
+      } catch (err) {
+        console.error("Error fetching on‐chain tasks:", err);
+      }
+    };
+
+    fetchOnChainTasks();
+  }, []);
+
 
   const handleToggle = (id: number) => {
     setActiveTaskId((prev) => (prev === id ? null : id));
@@ -72,7 +113,9 @@ export function Tasks() {
     | null
   >(null);
 
-  const sendTransaction = async () => {
+  const sendTransaction = async (id : number) => {
+
+    console.log('id', id);
     const {
       commandPayload,
       finalPayload,
@@ -81,8 +124,8 @@ export function Tasks() {
         {
           address: "0x13A037C20a3762ce151032Eb86D2DEd78c8c5E99",
           abi: SimpleABI,
-          functionName: "getTotalTasks",
-          args: [],
+          functionName: "acceptTask",
+          args: [id],
         },
       ],
     });
@@ -113,6 +156,9 @@ export function Tasks() {
                   <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
                     {task.title}
                   </h3>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    {task.type}
+                  </p>
                   <div className="flex justify-between mt-1">
                     <span className="text-lg text-gray-600 dark:text-gray-400">
                       {task.reward}
@@ -168,7 +214,7 @@ export function Tasks() {
                 {/* Button */}
                 <div className="mt-4">
                   <button
-                    onClick={sendTransaction}
+                    onClick={() => sendTransaction(task.id)}
                     className="w-full bg-[#6c3ce9] hover:bg-[#5b32c7] dark:bg-[#8b5cf6] dark:hover:bg-[#7c3aed] text-lg py-6 text-white rounded-lg h-12 flex items-center justify-center"
                   >
                     {task.buttonLabel}

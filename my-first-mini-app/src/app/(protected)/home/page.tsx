@@ -36,22 +36,12 @@ export default async function Home() {
               </div>
               <div className="text-sm">(= $3,20)</div>
             </div>
-            {/* <ThemeToggle /> */}
           </div>
         </div>
       </Page.Header>
       <Page.Main className="flex flex-col items-center justify-start gap-4 mb-16">
-        {/* <h1>hello</h1> */}
         <DebugTabs />
         <Tasks />
-        {/* <button></button> */}
-        {/* <button onClick={sendTransaction}>Send Transaction</button> */}
-
-        {/* <UserInfo /> */}
-        {/* <Verify />
-        <Pay />
-        <Transaction />
-        <ViewPermissions /> */}
       </Page.Main>
     </>
   );
