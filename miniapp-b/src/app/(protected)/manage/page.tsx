@@ -67,7 +67,7 @@ export default function ManageTasksPage() {
         const raw: any[] = await contract.getAllTasks();
 
         // Map each “tuple” into our TaskItem type
-        const parsed: TaskItem[] = raw.map((tup: any) => {
+        const parsed: TaskItem[] = await Promise.all(raw.map(async (tup: any) => {
           // Destructure by index (adjust if your struct order is different)
           
           const id: number = Number(tup[0]);
@@ -90,9 +90,24 @@ export default function ManageTasksPage() {
 
           // If there is a submission, you probably want to fetch the actual text,
           // but for now we’ll just show a placeholder.
-          const answer = hasSubmission
+          
+          let answer = hasSubmission
             ? "Submission received (view on‐chain or via API)."
             : "";
+
+            if (hasSubmission) {
+              const answers = await contract.getSubmittedWork(id);
+              // answer = answers[];
+              let type  = Number(tup[4])  === 1 ? "Ranking" : "Classification"
+              console.log('type', type);
+               if (type === "Ranking") {
+                answer = answers[3].toString()
+               } else {
+                let options = await contract.getChoices(id)
+                answer = options[answers[1]].toString()
+               }
+              console.log('answer', answers);
+            }
 
           return {
             id,
@@ -102,7 +117,7 @@ export default function ManageTasksPage() {
             rating,
             approved: statusStr === "Completed", // mark “approved” once completed
           };
-        });
+        }));
 
         setTasks(parsed);
       } catch (err) {
@@ -159,9 +174,9 @@ export default function ManageTasksPage() {
                 key={task.id}
                 className="p-4 shadow-sm bg-white rounded-xl border border-gray-200"
               >
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center flex-col-reverse gap-2 justify-between mb-2">
                   <h2 className="text-lg font-semibold text-gray-800">
-                    {task.title}
+                     <img src={`https://backend-production-bb1f.up.railway.app/files/${task.title}`} alt="" /> 
                   </h2>
                   <span
                     className={`px-3 py-1 text-sm font-medium rounded-full ${

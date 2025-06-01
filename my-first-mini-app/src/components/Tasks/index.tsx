@@ -42,6 +42,7 @@ export function Tasks() {
   // 2) Get user's address from session (assumes user.id is the wallet address)
   const session = useSession();
   const userAddress = session.data?.user.id?.toLowerCase() || "";
+  const [choices, setChoices] = useState<string[]>([]);
 
   // 3) Which card is expanded
   const [activeTaskId, setActiveTaskId] = useState<number | null>(1);
@@ -189,6 +190,31 @@ export function Tasks() {
     }
   };
 
+  useEffect(() => {
+    if (!acceptedTask) {
+      // If overlay closed, clear previous choices and selection.
+      setChoices([]);
+      setSelectedOptionIndex(null);
+      return;
+    }
+
+    // Only fetch choices if this is a Classification task:
+    if (acceptedTask.type === "Classification") {
+      const fetchChoices = async () => {
+        try {
+          // Call getChoices(taskId) on-chain. Assume it returns string[].
+          const raw: string[] = await contract.getChoices(acceptedTask.id);
+          // If needed, you can transform raw (e.g. decode bytes) here. We assume strings.
+          setChoices(raw);
+        } catch (err) {
+          console.error("Error fetching choices:", err);
+        }
+      };
+      fetchChoices();
+    }
+  }, [acceptedTask]);
+
+
   // 13) Render the full‐screen overlay if a task is accepted/continued
   const renderFullScreenView = () => {
     if (!acceptedTask) return null;
@@ -237,8 +263,40 @@ export function Tasks() {
               </div>
               <button
                 className="w-full bg-[#6c3ce9] hover:bg-[#5b32c7] dark:bg-[#8b5cf6] dark:hover:bg-[#7c3aed] text-white font-semibold py-3 rounded-lg"
-                onClick={() => {
+                onClick={async () => {
                   console.log("Submitted ranking value:", rankingValue);
+                  console.log(acceptedTask.id)
+                  console.log(rankingValue)
+
+                  if(acceptedTask.type == "Ranking") {
+                    const { commandPayload, finalPayload } =
+                    await MiniKit.commandsAsync.sendTransaction({
+                        transaction: [
+                        {
+                            address: CONTRACT_ADDRESS,
+                            abi: SimpleABI,
+                            functionName: "submitRankingWork",
+                            args: [acceptedTask.id, rankingValue],
+                        },
+                        ],
+                    });
+                    
+
+                    console.log('finalPayload', finalPayload);
+                  } else {
+                    const { commandPayload, finalPayload } =
+                    await MiniKit.commandsAsync.sendTransaction({
+                        transaction: [
+                        {
+                            address: CONTRACT_ADDRESS,
+                            abi: SimpleABI,
+                            functionName: "submitClassificationWork",
+                            args: [acceptedTask.id, rankingValue],
+                        },
+                        ],
+                    });
+                  }
+
                 }}
               >
                 Submit Ranking
@@ -252,95 +310,27 @@ export function Tasks() {
               <h3 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">
                 Choose one of the following options:
               </h3>
+
+
+
               <div className="grid grid-cols-2 gap-4 mb-4">
-                {/* Option 0 */}
-                <button
-                  onClick={() => setSelectedOptionIndex(0)}
-                  className={`flex items-center p-4 border rounded-lg transition
-                    ${
-                      selectedOptionIndex === 0
-                        ? "border-blue-500 bg-blue-100 dark:bg-blue-900"
-                        : "border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700"
-                    }`}
-                >
-                  <Star className="w-5 h-5 mr-2 text-yellow-400" />
-                  <span
-                    className={`${
-                      selectedOptionIndex === 0
-                        ? "text-blue-900 dark:text-blue-100"
-                        : "text-gray-900 dark:text-gray-100"
-                    }`}
+                {choices.map((choice, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setSelectedOptionIndex(index)}
+                    className={`flex items-center p-4 border rounded-lg transition
+                      ${
+                        selectedOptionIndex === index
+                          ? "border-blue-500 bg-blue-100 dark:bg-blue-900"
+                          : "border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700"
+                      }`}
                   >
-                    Option 1
-                  </span>
-                </button>
-
-                {/* Option 1 */}
-                <button
-                  onClick={() => setSelectedOptionIndex(1)}
-                  className={`flex items-center p-4 border rounded-lg transition
-                    ${
-                      selectedOptionIndex === 1
-                        ? "border-blue-500 bg-blue-100 dark:bg-blue-900"
-                        : "border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700"
-                    }`}
-                >
-                  <StarHalfIcon className="w-5 h-5 mr-2 text-yellow-400" />
-                  <span
-                    className={`${
-                      selectedOptionIndex === 1
-                        ? "text-blue-900 dark:text-blue-100"
-                        : "text-gray-900 dark:text-gray-100"
-                    }`}
-                  >
-                    Option 2
-                  </span>
-                </button>
-
-                {/* Option 2 */}
-                <button
-                  onClick={() => setSelectedOptionIndex(2)}
-                  className={`flex items-center p-4 border rounded-lg transition
-                    ${
-                      selectedOptionIndex === 2
-                        ? "border-blue-500 bg-blue-100 dark:bg-blue-900"
-                        : "border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700"
-                    }`}
-                >
-                  <ClipboardList className="w-5 h-5 mr-2 text-blue-500" />
-                  <span
-                    className={`${
-                      selectedOptionIndex === 2
-                        ? "text-blue-900 dark:text-blue-100"
-                        : "text-gray-900 dark:text-gray-100"
-                    }`}
-                  >
-                    Option 3
-                  </span>
-                </button>
-
-                {/* Option 3 */}
-                <button
-                  onClick={() => setSelectedOptionIndex(3)}
-                  className={`flex items-center p-4 border rounded-lg transition
-                    ${
-                      selectedOptionIndex === 3
-                        ? "border-blue-500 bg-blue-100 dark:bg-blue-900"
-                        : "border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700"
-                    }`}
-                >
-                  <ListOrdered className="w-5 h-5 mr-2 text-green-500" />
-                  <span
-                    className={`${
-                      selectedOptionIndex === 3
-                        ? "text-blue-900 dark:text-blue-100"
-                        : "text-gray-900 dark:text-gray-100"
-                    }`}
-                  >
-                    Option 4
-                  </span>
-                </button>
+                    {choice}
+                  </button>
+                ))}
               </div>
+
+              
 
               <button
                 disabled={selectedOptionIndex === null}
@@ -351,7 +341,18 @@ export function Tasks() {
                       : "bg-[#6c3ce9] hover:bg-[#5b32c7] dark:bg-[#8b5cf6] dark:hover:bg-[#7c3aed] text-white"
                   }
                 `}
-                onClick={() => {
+                onClick={async () => {
+                    const { commandPayload, finalPayload } =
+                    await MiniKit.commandsAsync.sendTransaction({
+                        transaction: [
+                        {
+                            address: CONTRACT_ADDRESS,
+                            abi: SimpleABI,
+                            functionName: "submitClassificationWork",
+                            args: [acceptedTask.id, selectedOptionIndex],
+                        },
+                        ],
+                    });
                   console.log("Submitted classification index:", selectedOptionIndex);
                 }}
               >

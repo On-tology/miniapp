@@ -1,6 +1,4 @@
 {
-  "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
-  "/page": "app/page.js",
   "/(protected)/home/page": "app/(protected)/home/page.js",
-  "/(protected)/budget/page": "app/(protected)/budget/page.js"
+  "/(protected)/manage/page": "app/(protected)/manage/page.js"
 }

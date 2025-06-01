@@ -30,66 +30,89 @@ export default function CreateTask() {
   };
 
   const handleSubmit = async () => {
-    // if (!taskType || !imageFile) {
-    //   alert("Please select task type and upload an image.");
-    //   return;
-    // }
-
-    console.log('came here : ')
-
-    console.log('image file : ', imageFile)
-    // Build the arguments for the contract call.
-    // If it's "classification", we pass the two options in an array.
-    // If it's "ranking", we pass an empty array for options.
-    const optionsArray =
-      taskType === "classification" ? [optionA, optionB] : [];
-
+    // 1) Basic validation
+    if (!taskType || !imageFile) {
+      alert("Please select a task type and upload an image.");
+      return;
+    }
+  
+    console.log("came here : ");
+    console.log("image file : ", imageFile);
+  
+    // Build the options array (only used for classification)
+    const optionsArray = taskType === "classification" ? [optionA, optionB] : [];
+  
     /* ---------- UPLOAD IMAGE TO NEST BACKEND ---------- */
-
-    let keystore
+    let keystore;
     try {
       const form = new FormData();
       form.append("file", imageFile); // field name MUST be “file”
-
-      console.log('sent...')
+  
+      console.log("sent...");
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/files`, // e.g. https://backend-production-bb1f.up.railway.app
+        `${process.env.NEXT_PUBLIC_API_URL}/files`,
         { method: "POST", body: form }
       );
-
-      console.log('received')
-
+      console.log("received");
+  
       if (!res.ok) {
         throw new Error(`Upload failed: ${res.status} ${res.statusText}`);
       }
-
+  
       const { key } = await res.json(); // { key: "uuid-image.png" }
-      keystore = key
+      keystore = key;
       console.log("Uploaded to S3, key:", key);
     } catch (err) {
       console.error(err);
       alert("Image upload failed (see console).");
-      return; // stop if the upload failed
+      return; // Stop if the upload failed
     }
-
+  
+    /* ---------- SEND TRANSACTION TO SMART CONTRACT ---------- */
+    let commandPayload;
+    let finalPayload;
+  
     try {
-      const {
-        commandPayload,
-        finalPayload,
-      } = await MiniKit.commandsAsync.sendTransaction({
+      // Decide which function name and arguments to use
+      let functionName;
+      let txArgs = [];
+  
+      if (taskType === "ranking") {
+        functionName = "postRankingTask";
+        // ranking takes just (keystore, reward)
+        txArgs = [
+          keystore,
+          ethers.parseEther(reward), // uint256 in wei
+        ];
+      } else {
+        // classification
+        functionName = "postClassificationTask";
+        // classification takes (keystore, optionsArray, reward)
+        console.log('optionsArray', optionsArray)
+        txArgs = [
+          keystore,
+          ethers.parseEther(reward),
+          optionsArray,
+        ];
+      }
+  
+      // Single call to sendTransaction
+      const txResult = await MiniKit.commandsAsync.sendTransaction({
         transaction: [
           {
             address: "0x13A037C20a3762ce151032Eb86D2DEd78c8c5E99",
             abi: SimpleABI,
-            functionName: "postRankingTask",
-            args: [
-              keystore,
-              ethers.parseEther(reward), // uint256 in wei
-            ],
+            functionName: functionName,
+            args: txArgs,
           },
         ],
       });
-
+  
+      // Pull out what you need
+      commandPayload = txResult.commandPayload;
+      finalPayload = txResult.finalPayload;
+  
+      // Store/display the result
       setTxResult(finalPayload);
       console.log("Blockchain response:", finalPayload);
     } catch (err) {
@@ -97,6 +120,7 @@ export default function CreateTask() {
       alert("Failed to send transaction. See console for details.");
     }
   };
+  
 
   return (
     <div className="w-full max-w-2xl flex flex-col items-center justify-center m-auto">
